@@ -9,6 +9,7 @@ import { Autocomplete, AutocompleteItem, BreadcrumbItem, Breadcrumbs, Button, Ta
 import axios from "axios";
 import getData from "./getData";
 import Cookies from 'js-cookie';
+import getDatacount from "./getcount";
 let pagination_size = 10;
 
 
@@ -41,6 +42,8 @@ export default function DashboardLayout({ children }: any) {
   const [jobs, setJobs] = useState<[]>([]);
   const [page, setpage] = useState(Number);
   const [lastid, setlastid] = useState("");
+  const [count, setcount] = useState(Number);
+  const [selectedsortby, setsortby] = useState<string>("");
   let location1 = "";
   let area1 = "";
   let company = "";
@@ -51,8 +54,9 @@ export default function DashboardLayout({ children }: any) {
 
   useEffect(() => {
 
-
+    setsortby((params.sortby) ? params.sortby : "Asc");
     setpage((params.page) ? parseInt(params.page) : 1);
+
     if (slug_value.length >= 2 && slug_value[2] != 'tag' && slug_value[2] != 'company') {
       location1 = slug_value[2];
       setSelectedLocation(slug_value[2]);
@@ -107,6 +111,10 @@ export default function DashboardLayout({ children }: any) {
       timeperiod1 = getjobs_time_period;
       setSelectedTimePeriods(getjobs_time_period);
     }
+    const count_of_data = async () => {
+      const apiDatacount = await getDatacount({});
+      setcount(apiDatacount);
+    };
     const fetchJobs = async () => {
       let jobfilter = [...jobtype1, ...days_week1, ...timeperiod1];
 
@@ -128,7 +136,7 @@ export default function DashboardLayout({ children }: any) {
 
       }
     };
-
+    count_of_data();
     fetchJobs();
   }, []);
 
@@ -155,7 +163,7 @@ export default function DashboardLayout({ children }: any) {
     setSelectedJobs(updatedSelectedJobs);
     console.log(updatedSelectedJobs.toLocaleString());
 
-    let data = { jobtype: updatedSelectedJobs.toLocaleString(), jobdays: selectedDays, jobs_time_period: selectedTimePeriods }
+    let data = { jobtype: updatedSelectedJobs.toLocaleString(), jobdays: selectedDays, jobs_time_period: selectedTimePeriods, sortby: selectedsortby }
 
     handleSearch(data);
     // Log the selected values
@@ -183,7 +191,7 @@ export default function DashboardLayout({ children }: any) {
     }
     setSelectedDays(updatedSelectedDays);
     console.log(updatedSelectedDays);
-    let data = { jobtype: selectedJobs, jobdays: updatedSelectedDays.toLocaleString(), jobs_time_period: selectedTimePeriods }
+    let data = { jobtype: selectedJobs, jobdays: updatedSelectedDays.toLocaleString(), jobs_time_period: selectedTimePeriods, sortby: selectedsortby }
     handleSearch(data);// Log the selected values
   };
 
@@ -215,7 +223,7 @@ export default function DashboardLayout({ children }: any) {
     setSelectedTimePeriods(updatedSelectedTimePeriods);
     console.log(updatedSelectedTimePeriods); // Log the selected values
 
-    let data = { jobtype: selectedJobs, jobdays: selectedDays, jobs_time_period: updatedSelectedTimePeriods.toLocaleString() }
+    let data = { jobtype: selectedJobs, jobdays: selectedDays, jobs_time_period: updatedSelectedTimePeriods.toLocaleString(), sortby: selectedsortby }
     handleSearch(data);
   };
   // Time End 
@@ -282,7 +290,7 @@ export default function DashboardLayout({ children }: any) {
 
     });
 
-    handleSearch({ page: pageNumber, start: (pageNumber >= 2) ? lastid.id : null, jobtype: selectedJobs, jobdays: selectedDays, jobs_time_period: selectedTimePeriods });
+    handleSearch({ page: pageNumber, start: (pageNumber >= 2) ? lastid.id : null, jobtype: selectedJobs, jobdays: selectedDays, jobs_time_period: selectedTimePeriods, sortby: selectedsortby });
   };
   const handleSearch = async (data?: any) => {
 
@@ -301,6 +309,9 @@ export default function DashboardLayout({ children }: any) {
     }
     if (data?.location) {
       queryParams.set("location", data?.location);
+    }
+    if (data?.sortby) {
+      queryParams.set("sortby", data?.sortby);
     }
     if (data?.area) {
       queryParams.set("area", data?.area);
@@ -387,6 +398,19 @@ export default function DashboardLayout({ children }: any) {
       path: '/' + params.area,
     })
   }
+  const handlesortbyChange = (sortby: string) => {
+    if (sortby == "Asc") {
+
+      let data = { jobtype: selectedJobs, jobdays: selectedDays, jobs_time_period: selectedTimePeriods, sortby: "Asc" }
+      handleSearch(data);
+    }
+    else {
+      let data = { jobtype: selectedJobs, jobdays: selectedDays, jobs_time_period: selectedTimePeriods, sortby: "Desc" }
+      handleSearch(data);
+
+    }
+    // Log the selected values
+  };
   const fetchSuggestions = async (input: any) => {
     if (input.length === 0) {
       setSuggestions([]);
@@ -446,7 +470,7 @@ export default function DashboardLayout({ children }: any) {
 
       });
 
-      handleSearch({ location: city[0].long_name, area: (area && area[0]) ? area[0].long_name : "", jobtype: selectedJobs, jobdays: selectedDays, jobs_time_period: selectedTimePeriods });
+      handleSearch({ location: city[0].long_name, area: (area && area[0]) ? area[0].long_name : "", jobtype: selectedJobs, jobdays: selectedDays, jobs_time_period: selectedTimePeriods, sortby: selectedsortby });
     }
 
   }
@@ -486,45 +510,45 @@ export default function DashboardLayout({ children }: any) {
     <section>
       <div className="jobsearch-wrapper-row text-black flex justify-between">
         <div className="job-heading-card">
-              <h2 className="job-count-heading">Over 2,000+ part-time jobs available in</h2>
-              <div className="text-center flex justify-start items-center">
-                <span className="job-location-heading">{(!selectedArea && !selectedLocation) ? "All" : (!selectedArea && selectedLocation) ? selectedLocation : selectedArea + ',' + selectedLocation}</span> <div style={{ color: "#2523CA", fontWeight: 500, fontSize: "14px", textDecorationLine: "underline", cursor: "pointer" }} onClick={() => setshow_location(!show_location)}>Change</div></div>
-                {show_location && (
-                  <div className="relative">
+          <h2 className="job-count-heading">Over {(count == 0) ? '⏳' : count}+ part-time jobs available in</h2>
+          <div className="text-center flex justify-start items-center">
+            <span className="job-location-heading">{(!selectedArea && !selectedLocation) ? "All" : (!selectedArea && selectedLocation) ? selectedLocation : selectedArea + ',' + selectedLocation}</span> <div style={{ color: "#2523CA", fontWeight: 500, fontSize: "14px", textDecorationLine: "underline", cursor: "pointer" }} onClick={() => setshow_location(!show_location)}>Change</div></div>
+          {show_location && (
+            <div className="relative">
 
-                    <Autocomplete
-                      className="max-w-xs"
-                      defaultInputValue={(selectedLocation) ? selectedLocation : (params.area) ? params.area + "," + params.location : params.location}
+              <Autocomplete
+                className="max-w-xs"
+                defaultInputValue={(selectedLocation) ? selectedLocation : (params.area) ? params.area + "," + params.location : params.location}
 
-                      items={suggestions}
-                      placeholder="Type to search location..."
-                      onInputChange={(value) => fetchSuggestions(value)}
-                      onSelectionChange={(key) => getareaandcity(key)}
-                      onReset={() => { setselectedArea(""); setSelectedLocation(""); }}
-                    >
-                      {(suggestions: any) => (
-                        <AutocompleteItem key={suggestions.value} className="capitalize">
-                          {suggestions.label}
-                        </AutocompleteItem>
-                      )}
-                    </Autocomplete>
+                items={suggestions}
+                placeholder="Type to search location..."
+                onInputChange={(value) => fetchSuggestions(value)}
+                onSelectionChange={(key) => getareaandcity(key)}
+                onReset={() => { setselectedArea(""); setSelectedLocation(""); }}
+              >
+                {(suggestions: any) => (
+                  <AutocompleteItem key={suggestions.value} className="capitalize">
+                    {suggestions.label}
+                  </AutocompleteItem>
+                )}
+              </Autocomplete>
 
-                    {/* <input type="search" id="default-search" className="global-search-bar block w-full p-3 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-50 dark:border-gray-400 dark:placeholder-gray-400 dark:text-black dark:focus:ring-blue-500 dark:focus:border-blue-500" style={{ fontSize:"12px" }} placeholder="Search by locality, job type, company" required />
+              {/* <input type="search" id="default-search" className="global-search-bar block w-full p-3 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-50 dark:border-gray-400 dark:placeholder-gray-400 dark:text-black dark:focus:ring-blue-500 dark:focus:border-blue-500" style={{ fontSize:"12px" }} placeholder="Search by locality, job type, company" required />
                         <div className="absolute inset-y-0 end-0 flex items-center pe-2  pointer-events-none">
                         <Image src="/icon/ion_search.svg" width={24} height={24} alt="Search" />
                         </div> */}
-                  </div>
-                )} 
+            </div>
+          )}
         </div>
         <div className="filter-group-btn-icon">
-            <Button className='mr-2' color="primary" variant="bordered" endContent={<Image src="/icon/filter-sort-ic.svg" width={16} height={16} alt="Filter" />}>
-              Sort by
-            </Button>
+          <Button onClick={() => handlesortbyChange(selectedsortby == "Asc" ? "Desc" : "Asc")} className='mr-2' color="primary" variant="bordered" endContent={<Image src="/icon/filter-sort-ic.svg" width={16} height={16} alt="Filter" />}>
+            Sort by
+          </Button>
         </div>
       </div>
       <div className="my-5 flex">
         <div className="filter-side-bar me-4 w-[224px]">
-          <div className="mt-4">
+          {/* <div className="mt-4">
               <h2 className="filter-side-bar_item-title">Salary</h2>
               <ul className="filter-side-bar_item-row" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
                   <li className="w-full">
@@ -546,96 +570,68 @@ export default function DashboardLayout({ children }: any) {
                       </div>
                   </li>
               </ul>
+          </div> */}
+          <div className="mt-4">
+            <h2 className="filter-side-bar_item-title">Job Model</h2>
+            <ul className="filter-side-bar_item-row" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+              {jobTypes.map((jobType, index) => (
+                <li className="w-full">
+                  <div className="flex items-center mb-2">
+                    <input id={`jobType-${index}`}
+                      type="checkbox"
+                      value={jobType.value}
+                      checked={jobType.value === "" ? selectedJobs.length === jobTypes.length : selectedJobs.includes(jobType.value)}
+                      onChange={() => handleJobTypeChange(jobType.value)} />
+                    <label htmlFor={`jobType-${index}`} className="w-full">{jobType.label}</label>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
           <div className="mt-4">
-              <h2 className="filter-side-bar_item-title">Job Model</h2>
-              <ul className="filter-side-bar_item-row" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-                  <li className="w-full">
-                      <div className="flex items-center mb-2">
-                          <input id="7" type="checkbox" className="" />
-                          <label htmlFor="7" className="w-full">Employer location</label>
-                      </div>
-                  </li>
-                  <li className="w-full">
-                      <div className="flex items-center mb-2">
-                          <input id="5" type="checkbox" className="" />
-                          <label htmlFor="5" className="w-full">Work from home</label>
-                      </div>
-                  </li>
-                  <li className="w-full">
-                      <div className="flex items-center mb-2">
-                          <input id="6" type="checkbox" className="" />
-                          <label htmlFor="6" className="w-full">Field Work</label>
-                      </div>
-                  </li>
-
-              </ul>
+            <h2 className="filter-side-bar_item-title">Day</h2>
+            <ul className="filter-side-bar_item-row" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+              {daysOfWeek.map((day, index) => (
+                <li className="w-full">
+                  <div className="flex items-center mb-2">
+                    <input id={`day-${index}`}
+                      type="checkbox"
+                      value={day.value}
+                      checked={day.value === "" ? selectedDays.length === daysOfWeek.length : selectedDays.includes(day.value)}
+                      onChange={() => handleDayChange(day.value)} />
+                    <label htmlFor={`day-${index}`} className="w-full">{day.label}</label>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
           <div className="mt-4">
-              <h2 className="filter-side-bar_item-title">Day</h2>
-              <ul className="filter-side-bar_item-row" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-                  <li className="w-full">
-                      <div className="flex items-center mb-2">
-                          <input id="7" type="checkbox" className="" />
-                          <label htmlFor="7" className="w-full">Weekday</label>
-                      </div>
-                  </li>
-                  <li className="w-full">
-                      <div className="flex items-center mb-2">
-                          <input id="8" type="checkbox" className="" />
-                          <label htmlFor="8" className="w-full">Weekend</label>
-                      </div>
-                  </li>
-              </ul>
-          </div>
-          <div className="mt-4">
-              <h2 className="filter-side-bar_item-title">Timing</h2>
-              <ul className="filter-side-bar_item-row" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-                  <li className="w-full">
-                      <div className="flex items-center mb-2">
-                          <input id="7" type="checkbox" className="" />
-                          <label htmlFor="7" className="w-full">Morning</label>
-                      </div>
-                  </li>
-                  <li className="w-full">
-                      <div className="flex items-center mb-2">
-                          <input id="8" type="checkbox" className="" />
-                          <label htmlFor="8" className="w-full">Afternoon</label>
-                      </div>
-                  </li>
-                  <li className="w-full">
-                      <div className="flex items-center mb-2">
-                          <input id="9" type="checkbox" className="" />
-                          <label htmlFor="9" className="w-full">Evening</label>
-                      </div>
-                  </li>
-                  <li className="w-full">
-                      <div className="flex items-center mb-2">
-                          <input id="10" type="checkbox" className="" />
-                          <label htmlFor="10" className="w-full">Night</label>
-                      </div>
-                  </li>
-              </ul>
+            <h2 className="filter-side-bar_item-title">Timing</h2>
+            <ul className="filter-side-bar_item-row" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+              {timePeriods.map((timePeriod, index) => (
+                <li className="w-full">
+                  <div className="flex items-center mb-2">
+                    <input id={`timePeriod-${index}`}
+                      type="checkbox"
+                      value={timePeriod.value}
+                      checked={timePeriod.value === "" ? selectedTimePeriods.length === timePeriods.length : selectedTimePeriods.includes(timePeriod.value)}
+                      onChange={() => handleTimePeriodChange(timePeriod.value)} />
+                    <label htmlFor={`timePeriod-${index}`} className="w-full">{timePeriod.label}</label>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
 
         </div>
         <div className="job-list-wrpper flex-1">
           <div className="flex justify-between items-center mb-4">
-            <h1 className="job-list-wrpper-title">Explore jobs</h1><span className="job-list-wrpper-sub-title">Total {jobs.length} Jobs </span>
+            <h1 className="job-list-wrpper-title"></h1><span className="job-list-wrpper-sub-title">Total {jobs.length} Jobs </span>
           </div>
           <div className="job-list-filter-body">
             <div className="job-list-filter-row  flex justify-between mb-4">
-              <div className="filter-group-btn">
-                <div className="flex flex-wrap gap-4">
-                  <Tabs variant="light" color='primary' aria-label="Tabs variants">
-                    <Tab key="All jobs" title="All jobs" />
-                    <Tab key="Online Jobs" title="Online Jobs" />
-                    <Tab key="Typing jobs" title="Typing jobs" />
-                    {/* <Tab key="Delivery jobs" title="Delivery jobs" /> */}
-                  </Tabs>
-                </div>
-              </div>
-              <div className="filter-group-btn-icon">
+
+              {/* <div className="filter-group-btn-icon">
                 <Button className='mr-2' color="primary" variant="bordered" endContent={<Image src="/icon/filter-sort-ic.svg" width={16} height={16} alt="Filter" />}>
                   Sort by
                 </Button>
@@ -643,7 +639,7 @@ export default function DashboardLayout({ children }: any) {
                   <Image src="/icon/white-filter-line.svg" width={16} height={16} alt="Filter" /> : <Image src="/icon/mingcute_filter-line-ic.svg" width={16} height={16} alt="Filter" />}>
                   Filter
                 </Button>
-              </div>
+              </div> */}
             </div>
             {isExpanded && (
               <div className="filter-collapse-card collapsible-content">
@@ -815,7 +811,7 @@ export default function DashboardLayout({ children }: any) {
                       <div className="filter-selected-item" >{jobtypefilter}
                         <Image className="img" src="/icon/close-ic.svg" width={16} height={16} alt="Close icon" onClick={() => {
 
-                          let data = { jobtype: selectedJobs.filter(selectedJobs => selectedJobs !== jobtypefilter), jobdays: selectedDays, jobs_time_period: selectedTimePeriods }
+                          let data = { jobtype: selectedJobs.filter(selectedJobs => selectedJobs !== jobtypefilter), jobdays: selectedDays, jobs_time_period: selectedTimePeriods, sortby: selectedsortby }
 
                           handleSearch(data);
                         }} />
@@ -827,7 +823,7 @@ export default function DashboardLayout({ children }: any) {
                       <div className="filter-selected-item">{daysfilter}
                         <Image className="img" src="/icon/close-ic.svg" width={16} height={16} alt="Close icon" onClick={() => {
 
-                          let data = { jobtype: selectedJobs, jobdays: selectedDays.filter(selectedDays => selectedDays !== daysfilter), jobs_time_period: selectedTimePeriods }
+                          let data = { jobtype: selectedJobs, jobdays: selectedDays.filter(selectedDays => selectedDays !== daysfilter), jobs_time_period: selectedTimePeriods, sortby: selectedsortby }
 
                           handleSearch(data);
                         }} />
@@ -839,7 +835,7 @@ export default function DashboardLayout({ children }: any) {
                       <div className="filter-selected-item" >{timefilter}
                         <Image className="img" src="/icon/close-ic.svg" width={16} height={16} alt="Close icon" onClick={() => {
 
-                          let data = { jobtype: selectedJobs, jobdays: selectedDays, jobs_time_period: selectedTimePeriods.filter(selectedTimePeriods => selectedTimePeriods !== timefilter) }
+                          let data = { jobtype: selectedJobs, jobdays: selectedDays, jobs_time_period: selectedTimePeriods.filter(selectedTimePeriods => selectedTimePeriods !== timefilter), sortby: selectedsortby }
 
                           handleSearch(data);
                         }} />

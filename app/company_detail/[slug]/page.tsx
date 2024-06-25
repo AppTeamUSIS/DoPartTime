@@ -9,6 +9,9 @@ import { Tabs, Tab } from "@nextui-org/react";
 import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
+import getDatacompanyactivecount from '@/app/Job_details/[slug]/getcompanycount';
+import { count } from 'console';
+import getDatacompanyactivetime from '@/app/company_list/getlastactive';
 
 
 function formatTimeRange(start_time: any, end_time: any) {
@@ -50,7 +53,10 @@ const company = async ({ params }: any) => {
       const docRef = doc(db, 'company', params.slug);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() };
+        const company_count_last_month = await getDatacompanyactivecount({ company: docSnap.id, lastmonth: true });
+        const company_count = await getDatacompanyactivecount({ company: docSnap.id });
+        const company_active = await getDatacompanyactivetime({ company: docSnap.id });
+        return { id: docSnap.id, ...docSnap.data(), count_last: company_count_last_month, count: company_count, company_active: company_active };
       } else {
         throw new Error('User not found');
       }
@@ -109,8 +115,8 @@ const company = async ({ params }: any) => {
           <div className="company-wrapper">
             <div className="company-detail_header">
               <div className="company-rating-row text-end mt-2">
-                <div className="company-rating_value flex justify-end text-white">4.5<Image className='ms-2' src="/icon/rating-fill.svg" width={20} height={20} alt="rating" /></div>
-                <div className="company-rating_total">273 Reviews</div>
+                {/* <div className="company-rating_value flex justify-end text-white">4.5<Image className='ms-2' src="/icon/rating-fill.svg" width={20} height={20} alt="rating" /></div>
+                <div className="company-rating_total">273 Reviews</div> */}
               </div>
               <div className="company-title-row mt-8 flex items-center">
                 {apiData.image ? (
@@ -120,9 +126,9 @@ const company = async ({ params }: any) => {
                 )}
                 <div className="ms-2 w-full flex-1 text-white">
                   <h2 className='company-title'>{apiData.name}</h2>
-                  <div className="company-loc mb-2">{apiData.location} <span className='company-since'>Active since April 2023</span></div>
+                  <div className="company-loc mb-2">{apiData.location} <span className='company-since'>{apiData.company_active}</span></div>
                   <div className="">
-                    <span className='badge-icon' ><Image src="/icon/grow-ic.svg" className='inline mr-1' width={14} height={14} alt="Default Company Logo" />Total 20 Jobs ( Posted 5 jobs in the last month )</span>
+                    <span className='badge-icon' ><Image src="/icon/grow-ic.svg" className='inline mr-1' width={14} height={14} alt="Default Company Logo" />Total {apiData.count} Jobs ( Posted {apiData.last_count} jobs in the last month )</span>
                   </div>
                 </div>
                 <div className="w-[210]">
@@ -208,7 +214,7 @@ const company = async ({ params }: any) => {
                 </Swiper>
               </div>
             </div>
-            <div className="trending-jobs-wrapper">
+            {/* <div className="trending-jobs-wrapper">
               <h2 className="trending-jobs-title">Company Reviews</h2>
               <div className="trending-jobs-row">
                 <Swiper
@@ -263,7 +269,7 @@ const company = async ({ params }: any) => {
 
                 </Swiper>
               </div>
-            </div>
+            </div> */}
             {/* <div className="mx-4">
               <div className="job-wrpper requirements-card">
                 <h2 className='tag-card-title mb-1'>Job Tags</h2>   

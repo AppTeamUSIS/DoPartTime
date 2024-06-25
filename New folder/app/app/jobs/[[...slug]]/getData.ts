@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, limit, orderBy, query, QueryConstraint, startAfter, where } from "firebase/firestore";
+import { collection, getDocs, limit, orderBy, query, QueryConstraint, startAfter, where } from "firebase/firestore";
 import { db } from "../../firbaseconfig"; // Adjust the path to your Firebase config
 
 interface GetDataParams {
@@ -10,7 +10,6 @@ interface GetDataParams {
     area?: string;
     jobfilter: any,
     company?: string;
-    sortby?: string;
 }
 
 interface JobData {
@@ -18,22 +17,9 @@ interface JobData {
     [key: string]: any; // Adjust the structure according to your actual job data
 }
 
-const pagination_size = 10; // Set your pagination size
+const pagination_size = 2; // Set your pagination size
 
-const company_data = async (slug: any) => {
-    try {
-        const docRef = doc(db, 'company', slug);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            return { id: docSnap.id, ...docSnap.data() };
-        } else {
-            throw new Error('User not found');
-        }
-    } catch (error: any) {
-        throw new Error("Failed to fetch data from Firestore: " + error.message);
-    }
-};
-const getData = async ({ page, count, lastVisible, lastid, location, area, jobfilter, company, sortby }: GetDataParams): Promise<JobData[] | any> => {
+const getData = async ({ page, count, lastVisible, lastid, location, area, jobfilter, company }: GetDataParams): Promise<JobData[] | any> => {
 
     try {
 
@@ -61,17 +47,7 @@ const getData = async ({ page, count, lastVisible, lastid, location, area, jobfi
         //     queryConstraints.push(where('tag_store', 'array-contains', timeperiod));
         // }
         queryConstraints.push(orderBy('status', 'asc'));
-        if (sortby == 'Asc') {
-            queryConstraints.push(orderBy('title', 'desc'));
-
-            // queryConstraints.push(orderBy('title', 'asc'));
-        }
-        else {
-            queryConstraints.push(orderBy('title', 'desc'));
-
-        }
-
-
+        queryConstraints.push(orderBy('publish_time', 'desc'));
         if (page >= 2 && (!count || !lastVisible)) {
             if (lastid) {
                 queryConstraints.push(startAfter(lastid));
@@ -90,8 +66,7 @@ const getData = async ({ page, count, lastVisible, lastid, location, area, jobfi
         }
 
         const promises = querySnapshot.docs.map(async (doc) => {
-            let company_details = await company_data(doc.data().company.id);
-            const data: JobData = { id: doc.id, ...doc.data(), company: company_details };
+            const data: JobData = { id: doc.id, ...doc.data() };
             return data;
         });
 

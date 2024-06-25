@@ -1,7 +1,7 @@
 'use client'
 
 import { db } from './firbaseconfig';
-import { QueryConstraint, collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { QueryConstraint, collection, doc, getDoc, getDocs, limit, query, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -16,6 +16,8 @@ import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 import getDatatrending from './get_data_trending';
 import getDatatrendingcate from './getcatelist';
+import getDatatrendingcompany from './get_company_tredings';
+import getTopCategories from './getTopCategories';
 
 const getDatatrendingdata = async () => {
   try {
@@ -39,11 +41,13 @@ const company = async (slug: any) => {
     throw new Error("Failed to fetch data from Firestore: " + error.message);
   }
 };
-const getData = async () => {
+const getData = async (limitvalue: any) => {
   try {
     const queryConstraints: QueryConstraint[] = [];
     queryConstraints.push(where('status', '!=', 0));
-
+    if (limitvalue) {
+      queryConstraints.push(limit(4));
+    }
     const postsRef = query(collection(db, "jobs"), ...queryConstraints);
     const querySnapshot = await getDocs(postsRef);
     const data: any = [];
@@ -122,16 +126,20 @@ const testiMonialsArticle = [
   { artcleTitle: 'The Rise of Part-Time Jobs: ', articleDesc: 'In todays fast-evolving job market part-time employment has become a prominent and appealing option for many individuals.', articleDate: 'January 11, 2023' },
 ]
 const dashboard: any = async () => {
+
   try {
-    const apiData = await getData();
+    const apiData = await getData(true);
+    const apiDatacount = await getData(false);
     const newdata = await getDatatrendingdata();
     const datacate = await getDatatrendingcate();
+    const datacompany = await getDatatrendingcompany();
+    const topcatvalues = await getTopCategories();
     return (
       <>
         <div className="jobsearch-wrapper">
           <div className="jobsearch-bg-widget">
             <div className="job-heading-card">
-              <h2 className="job-count-heading">Over 2,000+ part-time jobs available in</h2>
+              <h2 className="job-count-heading">Over {apiDatacount.length}+ part-time jobs available in</h2>
               <div className="text-center"><span className="job-location-heading">Egmore, Chennai</span> <Link style={{ color: "#fff", fontWeight: 500, fontSize: "14px", textDecorationLine: "underline" }} href="#">Change</Link></div>
             </div>
             {/* <div className="flex flex-col flex-1 justify-center md:flex-row ms:flex-col mt-6">
@@ -278,117 +286,123 @@ const dashboard: any = async () => {
           </div>
         </div>
         <div className="top-cmp-wrapper trending-jobs-wrapper">
-            <h2 className="trending-jobs-title">Top companies</h2>
-            <div className="trending-jobs-row">
-              <Swiper
-                slidesPerView={2}
-                spaceBetween={8}
-                // centeredSlides={true}
-                navigation
+          <h2 className="trending-jobs-title">Top companies</h2>
+          <div className="trending-jobs-row">
+            <Swiper
+              slidesPerView={2}
+              spaceBetween={8}
+              // centeredSlides={true}
+              navigation
 
 
-                // pagination={{ type: 'fraction' }}
-                modules={[Navigation, Pagination]}
-                onSwiper={swiper => console.log(swiper)}
-                className=''
-                breakpoints={{
-                  // when window width is >= 320px
-                  320: {
-                    slidesPerView: 3.3,
-                    spaceBetween: 8,
-                  },
-                  // when window width is >= 480px
-                  480: {
-                    slidesPerView: 4,
-                    spaceBetween: 8
-                    ,
-                  },
-                  // when window width is >= 640px
-                  900: {
-                    slidesPerView: 2,
-                    spaceBetween: 8,
-                  },
-                }}
-              >
-                {cmpReviews.map((value, index) => (
-                  <SwiperSlide key={index} >
+              // pagination={{ type: 'fraction' }}
+              modules={[Navigation, Pagination]}
+              onSwiper={swiper => console.log(swiper)}
+              className=''
+              breakpoints={{
+                // when window width is >= 320px
+                320: {
+                  slidesPerView: 3.3,
+                  spaceBetween: 8,
+                },
+                // when window width is >= 480px
+                480: {
+                  slidesPerView: 4,
+                  spaceBetween: 8
+                  ,
+                },
+                // when window width is >= 640px
+                900: {
+                  slidesPerView: 2,
+                  spaceBetween: 8,
+                },
+              }}
+            >
+              {datacompany.map((item: any, index: any) => (
+
+                <SwiperSlide key={index} >
+                  <Link href={`jobs/company/${item.id}`}>
                     <div className="trending-jobs-column top-com-column">
                       <div className="flex justify-center items-center">
                         <div className="flex items-center flex-col ">
                           <Image className='company-img' src="https://flowbite.com/docs/images/logo.svg" width={60} height={60} alt="Default Company Logo" />
-                          <h2 className='top-com-title'> {value.comTitle}</h2>
+                          <h2 className='top-com-title'> {item.name}</h2>
                         </div>
                       </div>
                       <div className="rating-row flex justify-center items-center">
-                          <Image className='cmp-rating-ic' src="/icon/star.svg" width={14} height={14} alt="rating" /><span className='rating-value'>4.5</span><span className='rating-count'>(300+)</span>
+                        <span className='rating-count'>({item.jobCount})</span>
                       </div>
                     </div>
-                  </SwiperSlide>
-                ))}
+                  </Link>
+                </SwiperSlide>
 
-              </Swiper>
-            </div>
+              ))}
+
+            </Swiper>
           </div>
-        
-          <div className="job-list-wrpper home-job-list-wrpper">
-            <div className="flex justify-between items-center mb-4">
-              <h1 className='job-list-wrpper-title'>Explore jobs</h1>
-              <span className='job-list-wrpper-sub-title'>Total {apiData.length} Jobs </span>
-            </div>
-            <div className="job-list-filter-row  flex justify-between mb-4">
-              <div className="filter-group-btn">
-                <div className="flex flex-wrap gap-4">
-                  <Tabs variant="light" color='primary' aria-label="Tabs variants">
-                    <Tab key="All jobs" title="All jobs" />
-                    <Tab key="Online Jobs" title="Online Jobs" />
-                    <Tab key="Typing jobs" title="Typing jobs" />
-                    {/* <Tab key="Delivery jobs" title="Delivery jobs" /> */}
-                  </Tabs>
-                </div>
+        </div>
+
+        <div className="job-list-wrpper home-job-list-wrpper">
+          <div className="flex justify-between items-center mb-4">
+            <h1 className='job-list-wrpper-title'>Explore jobs</h1>
+            <span className='job-list-wrpper-sub-title'>Total {apiDatacount.length} Jobs </span>
+          </div>
+          <div className="job-list-filter-row  flex justify-between mb-4">
+            <div className="filter-group-btn">
+              <div className="flex flex-wrap gap-4">
+                <Tabs variant="light" color='primary' aria-label="Tabs variants">
+                  <Tab key="All jobs" title="All jobs" />
+                  {topcatvalues.map((item: any, index: any) => (
+
+                    <Tab href={`jobs/tag/${item.id}`} key={item.data.name} title={item.data.name} />
+
+                  ))}
+                </Tabs>
               </div>
             </div>
-            {apiData.map((item: any, index: any) => (
-              <div key={index}>
-                <div className="" key={item.id}>
-                  <div className="job-list-card" key={item.id}>
-                    <Link href={`Job_details/${item.id}`}>
-                      <div className="job-header">
-                        {item.company.image ? (
-                          <Image src={item.company.image} width={32} height={32} alt="Company" />
-                        ) : (
-                          <Image src="https://flowbite.com/docs/images/logo.svg" width={32} height={32} alt="Default Company Logo" />
-                        )}
-                        <div>
-                          <p>{item.title}</p>
-                          <span>{item.company.name}</span>
-                        </div>
+          </div>
+          {apiData.map((item: any, index: any) => (
+            <div key={index}>
+              <div className="" key={item.id}>
+                <div className="job-list-card" key={item.id}>
+                  <Link href={`Job_details/${item.id}`}>
+                    <div className="job-header">
+                      {item.company.image ? (
+                        <Image src={item.company.image} width={32} height={32} alt="Company" />
+                      ) : (
+                        <Image src="https://flowbite.com/docs/images/logo.svg" width={32} height={32} alt="Default Company Logo" />
+                      )}
+                      <div>
+                        <p>{item.title}</p>
+                        <span>{item.company.name}</span>
                       </div>
+                    </div>
+                    <div className="flex flex-col flex-1 md:flex-row ms:flex-col">
                       <div className="flex flex-col flex-1 md:flex-row ms:flex-col">
-                        <div className="flex flex-col flex-1 md:flex-row ms:flex-col">
-                          <div className="hidden md:block w-10"></div>
-                          <div className="job-body">
-                            <Image src="/icon/map-pin.svg" width={16} height={16} alt="Logo" />
-                            <span> {item.location}</span>
-                          </div>
-                          <div className="job-body">
-                            <Image src="/icon/clock.svg" width={16} height={16} alt="Logo" />
-                            <span>{formatTimeRange(item.start_time, item.end_time)}  {item.working_days}</span>
-                          </div>
-                          <div className="job-body">
-                            <Image src="/icon/wallet.svg" width={16} height={16} alt="Logo" />
-                            <span>₹ {item.start_salary} - {item.end_salary} per month</span>
-                          </div>
+                        <div className="hidden md:block w-10"></div>
+                        <div className="job-body">
+                          <Image src="/icon/map-pin.svg" width={16} height={16} alt="Logo" />
+                          <span> {item.location}</span>
                         </div>
-                        <div className="postby">
-                          <span>{formatPostedTime(item.publish_time)}</span>
+                        <div className="job-body">
+                          <Image src="/icon/clock.svg" width={16} height={16} alt="Logo" />
+                          <span>{formatTimeRange(item.start_time, item.end_time)}  {item.working_days}</span>
+                        </div>
+                        <div className="job-body">
+                          <Image src="/icon/wallet.svg" width={16} height={16} alt="Logo" />
+                          <span>₹ {item.start_salary} - {item.end_salary} per month</span>
                         </div>
                       </div>
-                    </Link>
-                  </div>
+                      <div className="postby">
+                        <span>{formatPostedTime(item.publish_time)}</span>
+                      </div>
+                    </div>
+                  </Link>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
+        </div>
 
         <div className="explore-card flex justify-center items-center">
           <h2 className="explore-card__tile">Explore all available options at a glance by clicking here.
@@ -398,104 +412,104 @@ const dashboard: any = async () => {
 
         <div className="testimonials-card">
           <div className="testimonials-row">
-          <Swiper
-                slidesPerView={2}
-                spaceBetween={8}
-                // centeredSlides={true}
-                navigation
+            <Swiper
+              slidesPerView={2}
+              spaceBetween={8}
+              // centeredSlides={true}
+              navigation
 
 
-                // pagination={{ type: 'fraction' }}
-                modules={[Navigation, Pagination]}
-                onSwiper={swiper => console.log(swiper)}
-                className=''
-                breakpoints={{
-                  // when window width is >= 320px
-                  320: {
-                    slidesPerView: 1,
-                    spaceBetween: 8,
-                  },
-                  // when window width is >= 480px
-                  480: {
-                    slidesPerView: 3,
-                    spaceBetween: 8
-                    ,
-                  },
-                  // when window width is >= 640px
-                  640: {
-                    slidesPerView: 2,
-                    spaceBetween: 8,
-                  },
-                }}
+              // pagination={{ type: 'fraction' }}
+              modules={[Navigation, Pagination]}
+              onSwiper={swiper => console.log(swiper)}
+              className=''
+              breakpoints={{
+                // when window width is >= 320px
+                320: {
+                  slidesPerView: 1,
+                  spaceBetween: 8,
+                },
+                // when window width is >= 480px
+                480: {
+                  slidesPerView: 3,
+                  spaceBetween: 8
+                  ,
+                },
+                // when window width is >= 640px
+                640: {
+                  slidesPerView: 2,
+                  spaceBetween: 8,
+                },
+              }}
             >
               {testiMonials.map((value, index) => (
-                  <SwiperSlide key={index} >
-                     <div className="testimonials-column">
-                    <p className='testimonials-desc'>{ value.desc }</p>
-                        <div className="testimonials-avathar__row flex">
-                          <Image src="https://flowbite.com/docs/images/logo.svg" className='mr-2' width={44} height={44} alt="Default" />
-                          <div className="">
-                        <h2 className='testimonials-user-title'>{ value.userName }</h2>
-                        <div className="testimonials-sub-title">Co-Founder at <span className='testimonials-user-com-name'> { value.cmpName}</span></div>
-                          </div>
-                        </div>
+                <SwiperSlide key={index} >
+                  <div className="testimonials-column">
+                    <p className='testimonials-desc'>{value.desc}</p>
+                    <div className="testimonials-avathar__row flex">
+                      <Image src="https://flowbite.com/docs/images/logo.svg" className='mr-2' width={44} height={44} alt="Default" />
+                      <div className="">
+                        <h2 className='testimonials-user-title'>{value.userName}</h2>
+                        <div className="testimonials-sub-title">Co-Founder at <span className='testimonials-user-com-name'> {value.cmpName}</span></div>
                       </div>
-                  </SwiperSlide>
-              ))}              
+                    </div>
+                  </div>
+                </SwiperSlide>
+              ))}
             </Swiper>
           </div>
           <div className="testimonials-article-row testimonials-row">
-          <Swiper
-                slidesPerView={2}
-                spaceBetween={8}
-                // centeredSlides={true}
-                navigation
+            <Swiper
+              slidesPerView={2}
+              spaceBetween={8}
+              // centeredSlides={true}
+              navigation
 
 
-                // pagination={{ type: 'fraction' }}
-                modules={[Navigation, Pagination]}
-                onSwiper={swiper => console.log(swiper)}
-                className=''
-                breakpoints={{
-                  // when window width is >= 320px
-                  320: {
-                    slidesPerView: 1,
-                    spaceBetween: 8,
-                  },
-                  // when window width is >= 480px
-                  480: {
-                    slidesPerView: 2,
-                    spaceBetween: 8
-                    ,
-                  },
-                  // when window width is >= 640px
-                  640: {
-                    slidesPerView: 2,
-                    spaceBetween: 8,
-                  },
-                  900: {
-                    slidesPerView: 3,
-                    spaceBetween: 8,
-                  },
-                }}
+              // pagination={{ type: 'fraction' }}
+              modules={[Navigation, Pagination]}
+              onSwiper={swiper => console.log(swiper)}
+              className=''
+              breakpoints={{
+                // when window width is >= 320px
+                320: {
+                  slidesPerView: 1,
+                  spaceBetween: 8,
+                },
+                // when window width is >= 480px
+                480: {
+                  slidesPerView: 2,
+                  spaceBetween: 8
+                  ,
+                },
+                // when window width is >= 640px
+                640: {
+                  slidesPerView: 2,
+                  spaceBetween: 8,
+                },
+                900: {
+                  slidesPerView: 3,
+                  spaceBetween: 8,
+                },
+              }}
             >
               {testiMonialsArticle.map((value, index) => (
-                  <SwiperSlide key={index} >
-                     <div className="testimonials-article-column">
-                      <h2 className='testimonials-article-title'>{ value.artcleTitle } </h2>
-                      <p className='testimonials-article-desc'>{ value.articleDesc }</p>
-                      <div className="testimonials-article-date">{ value.articleDate }</div>
-                    </div>
-                  </SwiperSlide>
-              ))}              
+                <SwiperSlide key={index} >
+                  <div className="testimonials-article-column">
+                    <h2 className='testimonials-article-title'>{value.artcleTitle} </h2>
+                    <p className='testimonials-article-desc'>{value.articleDesc}</p>
+                    <div className="testimonials-article-date">{value.articleDate}</div>
+                  </div>
+                </SwiperSlide>
+              ))}
             </Swiper>
           </div>
           <div className="app-promotion-row">
             <div className="app-promotion-column flex flex-col items-center app-promotion-column_1">
               <p className="app-promotion-desc"><span className='font-semibold'>Want to talk to someone?</span> <br />
-                  Our customer support is here to help you. <br />
-                  Monday to Friday 10:00am to 6:00pm</p>
-              <Link href="#" className='flex items-center app-promotion-contact' style={{ backgroundColor: "#DEE0FF", padding: "6px 20px", borderRadius: "08px", fontSize: "16px", fontWeight: 600, width:"214px", marginTop:"10px" }}> <Image src="/icon/whatsapp-ic.svg" width={27} height={27} alt="Whatsapp" /> +91 987655 43321</Link>
+                Our customer support is here to help you. <br />
+                Monday to Friday 10:00am to 6:00pm</p>
+              <Link href="#" className='flex items-center app-promotion-contact' style={{ backgroundColor: "#DEE0FF", padding: "6px 20px", borderRadius: "08px", fontSize: "16px", fontWeight: 600, width: "214px", marginTop: "10px" }}> <Image src="/icon/whatsapp-ic.svg" width={27} height={27} alt="Whatsapp" /> +91 987655 43321</Link>
             </div>
             <div className="app-promotion-column app-promotion-column_2">
               <h2 className='app-promotion-tile'>Apply anytime, anywhere.</h2>
@@ -504,10 +518,10 @@ const dashboard: any = async () => {
                 <Image src="/icon/Andriod.png" width={127} height={37} alt="Googlr Play" />
                 <Image src="/icon/IOS.png" width={127} height={37} alt="App Store" />
               </div>
-              </div>
             </div>
+          </div>
         </div>
-            
+
 
       </>
     );
@@ -525,4 +539,8 @@ const dashboard: any = async () => {
 export default dashboard;
 
 
+
+function useUrl(): { href: any; pathname: any; } {
+  throw new Error('Function not implemented.');
+}
 // Server side api fetching end 

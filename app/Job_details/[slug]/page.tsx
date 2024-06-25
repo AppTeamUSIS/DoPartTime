@@ -7,6 +7,7 @@ import Image from 'next/image';
 import type { Metadata, ResolvingMetadata } from 'next'
 import Head from 'next/head';
 import Script from 'next/script'
+import getDatacompanyactivecount from './getcompanycount';
 
 
 
@@ -61,7 +62,8 @@ const Jobdetailspage = async ({ params }: any) => {
         const companyDocSnap = await getDoc(companyDocRef);
 
         if (companyDocSnap.exists()) {
-          const companyData = companyDocSnap.data();
+          const company_count = await getDatacompanyactivecount({ company: companyDocSnap.id });
+          const companyData = { ...companyDocSnap.data(), id: companyDocSnap.id, count: company_count };
           console.log("company details:", companyData);
 
           const categoryIds = jobData.category.map((categoryRef: any) => categoryRef.id);
@@ -205,7 +207,7 @@ const Jobdetailspage = async ({ params }: any) => {
                     </div>
                   </div>
                   {/* <div className="btn"> */}
-                  <Link className='primary-btn-lg' href={`https://a-i-gen-project-60pl4r.flutterflow.app/job/${params.slug}`}>
+                  <Link className='primary-btn-lg' href={`https://app.doparttime.com/job/${params.slug}`}>
                     Apply Now
                   </Link>
                   {/* </div>               */}
@@ -292,13 +294,13 @@ const Jobdetailspage = async ({ params }: any) => {
               </div>
               <div className="job-add-section" style={{ width: "300px" }}>
                 <div className="company-card bg-white p-4 rounded-lg">
-                  <h2 className='company-card_title mb-1'>Redditch Accessories</h2>
-                  <div className='company-card_loc mb-1'>Egmore, Chennai</div>
-                  <div className="company-card_desc mb-1">1000+ Employees (300+ Reviews) </div>
+                  <h2 className='company-card_title mb-1'>{companyData.name}</h2>
+                  <div className='company-card_loc mb-1'>{companyData.location}</div>
+                  {/* <div className="company-card_desc mb-1">1000+ Employees (300+ Reviews) </div> */}
                   <div className="mb-3">
-                    <span className='badge-icon' ><Image src="/icon/grow-ic.svg" className='inline mr-1' width={14} height={14} alt="Default Company Logo" />Total 20 Jobs</span>
+                    <span className='badge-icon' ><Image src="/icon/grow-ic.svg" className='inline mr-1' width={14} height={14} alt="Default Company Logo" />Total {companyData.count} Jobs</span>
                   </div>
-                  <Link className="primary-btn-lg max-w-full text-center block" href="#">View active jobs</Link>
+                  <Link className="primary-btn-lg max-w-full text-center block" href={`../jobs/company/${companyData.id}`}>View active jobs</Link>
                 </div>
                 <div className="mt-4">
                   <Image src="/banner/job-apply-banner.svg" width={300} height={140} alt='Banner image' />
