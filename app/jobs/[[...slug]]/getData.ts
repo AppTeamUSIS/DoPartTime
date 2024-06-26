@@ -62,9 +62,9 @@ const getData = async ({ page, count, lastVisible, lastid, location, area, jobfi
         // }
         queryConstraints.push(orderBy('status', 'asc'));
         if (sortby == 'Asc') {
-            queryConstraints.push(orderBy('title', 'desc'));
+            // queryConstraints.push(orderBy('title', 'desc'));
 
-            // queryConstraints.push(orderBy('title', 'asc'));
+            queryConstraints.push(orderBy('title', 'asc'));
         }
         else {
             queryConstraints.push(orderBy('title', 'desc'));
