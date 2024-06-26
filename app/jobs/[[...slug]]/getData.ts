@@ -57,9 +57,7 @@ const getData = async ({ page, count, lastVisible, lastid, location, area, jobfi
         // }
         queryConstraints.push(where('status', '!=', 0));
 
-        // if (timeperiod.length >= 1) {
-        //     queryConstraints.push(where('tag_store', 'array-contains', timeperiod));
-        // }
+
         queryConstraints.push(orderBy('status', 'asc'));
         if (sortby == 'Asc') {
             // queryConstraints.push(orderBy('title', 'desc'));
