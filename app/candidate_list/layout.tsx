@@ -311,7 +311,7 @@ export default function DashboardLayout({ children }: any) {
                             <h2 className="filter-side-bar_item-title">Preferred Location </h2>
                             <ul className="filter-side-bar_item-row" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
                                 {jobTypes.map((jobType, index) => (
-                                    <li className="w-full">
+                                    <li className="w-full" key={index}>
                                         <div className="flex items-center mb-2">
                                             <input id={`jobType-${index}`}
                                                 type="checkbox"
@@ -328,7 +328,7 @@ export default function DashboardLayout({ children }: any) {
                             <h2 className="filter-side-bar_item-title">Timing</h2>
                             <ul className="filter-side-bar_item-row" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
                                 {daysOfWeek.map((day, index) => (
-                                    <li className="w-full">
+                                    <li className="w-full" key={index}>
                                         <div className="flex items-center mb-2">
                                             <input id={`day-${index}`}
                                                 type="checkbox"
